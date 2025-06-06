@@ -121,7 +121,7 @@ def main():
     args = parser.parse_args()
 
     # Initialisation du client OpenAI avec l'URL de base spécifiée
-    # Une clé API factice est utilisée pour les serveurs locaux compatibles OpenAI. [1, 8]
+    # Une clé API factice est utilisée pour les serveurs locaux compatibles OpenAI.
     openai_client = OpenAI(
         base_url='http://127.0.0.1:5001/v1',
         api_key='lm-studio' # Clé API factice
@@ -147,7 +147,10 @@ def main():
             processed_entry = traiter_chapitre(openai_client, entry)
             resultats.append(processed_entry)
 
-        chemin_sortie = chemin_entree.stem + "-summary.json"
+        # Modification ici : construction du chemin de sortie dans le même répertoire
+        nom_fichier_sortie = chemin_entree.stem + "-summary.json"
+        chemin_sortie = chemin_entree.parent / nom_fichier_sortie # Utilise le répertoire parent
+
         with open(chemin_sortie, 'w', encoding='utf-8') as f:
             json.dump(resultats, f, indent=2, ensure_ascii=False)
 

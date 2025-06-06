@@ -8,20 +8,18 @@ from openai import OpenAI # Importe le client OpenAI
 EXPRESSIONS_INTERDITES = [
     'dans ce passage',
     'pour conclure',
-    'globalement,',
     'ce chapitre',
     'ce texte',
     'cet extrait', # Traduction de 'this passage' et 'this excerpt'
     'cette section',
     'cette sélection',
     'cette histoire',
-    'l\'histoire',
     'ce roman',
     'ce livre',
     '" par ',
-    '<|fintexte|>',
-    '<|debutdialogue|>', # Traduction de '<|im_start|>'
-    '<|findialogue|>',   # Traduction de '<|im_end|>'
+    '<|endoftext|>',
+    '<|im_start|>',
+    '<|im_end|>',   # Traduction de '<|im_end|>'
     '###',
     '1.',
     '0:',
@@ -34,8 +32,10 @@ def valider_contenu(texte: str, titre_livre: str) -> bool:
     """
     texte_minuscule = texte.lower()
     # Vérifie si une expression interdite est présente
-    if any(expr in texte_minuscule for expr in EXPRESSIONS_INTERDITES):
-        return False
+    for expr in EXPRESSIONS_INTERDITES:
+        if expr in texte_minuscule:
+            print(f"!!! Expression interdite détectée : '{expr}'")
+            return False
     # Vérifie si le titre du livre est mentionné entre guillemets
     if f'"{titre_livre.lower()}"' in texte_minuscule:
         return False
@@ -55,10 +55,10 @@ def traiter_chapitre(client: OpenAI, entree: dict) -> dict:
 
     # Traduction du prompt système original
     system_prompt = (
-        "Lis et résume le chapitre d'un roman fourni par l'utilisateur. "
+        "Lis et résume en français le chapitre d'un roman fourni par l'utilisateur. "
         "Sois descriptif, évite le langage académique comme \"Globalement\", "
         "\"En conclusion\", \"Dans ce passage\", etc. "
-        "Résume simplement l'intrigue et les points clés du texte fourni. "
+        "Résume simplement l'intrigue et les points clés du texte fourni en français. "
         "Ne parle pas du livre et ne mentionne pas son titre ou l'auteur dans ton résumé. "
         "Écris uniquement ton résumé en un seul paragraphe, sans autre texte, titres ou listes."
     )
@@ -89,6 +89,11 @@ def traiter_chapitre(client: OpenAI, entree: dict) -> dict:
             if not valider_contenu(output, book):
                 print('! Sortie interdite détectée ou titre du livre mentionné. Réessai...')
                 raise ValueError('Erreur de rédaction détectée dans la sortie.')
+
+            # Nouvelle vérification de la longueur du résumé
+            if len(output) < 50:
+                print(f"! Résumé trop court ({len(output)} caractères). Doit être d'au moins 50 caractères. Réessai...")
+                raise ValueError('Résumé généré trop court.')
 
             summary_text = output
             print(f"- Résumé généré : {summary_text[:100]}...") # Affiche les 100 premiers caractères
